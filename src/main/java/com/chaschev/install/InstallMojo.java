@@ -83,10 +83,6 @@ public class InstallMojo extends AbstractExecMojo2 {
                 ).execute();
             }
 
-
-
-
-
             Class<?> installation = new URLClassLoader(new URL[]{artifact.getFile().toURI().toURL()}).loadClass("Installation");
 
             List<Object[]> entries = (List<Object[]>) OpenBean2.getStaticFieldValue(installation, "shortcuts");
