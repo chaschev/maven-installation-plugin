@@ -1,4 +1,4 @@
-package com.chaschev;
+package com.chaschev.install;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one

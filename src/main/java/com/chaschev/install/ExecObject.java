@@ -1,4 +1,4 @@
-package com.chaschev;
+package com.chaschev.install;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;

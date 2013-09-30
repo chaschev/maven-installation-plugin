@@ -1,4 +1,4 @@
-package com.chaschev;
+package com.chaschev.install;
 
 /*
  * Copyright 2001-2005 The Apache Software Foundation.

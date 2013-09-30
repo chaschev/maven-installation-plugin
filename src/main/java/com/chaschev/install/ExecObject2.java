@@ -1,7 +1,5 @@
-package com.chaschev;
+package com.chaschev.install;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.resolution.ArtifactResult;
@@ -20,7 +18,7 @@ import java.util.*;
  * @version $Id: ExecMojo.java 14727 2011-09-15 19:58:00Z rfscholte $
  */
 public class ExecObject2 {
-    private Log log ;
+    private Log log;
 
     /**
      * Defines the scope of the classpath passed to the plugin. Set to compile,test,runtime or system depending on your
@@ -127,28 +125,8 @@ public class ExecObject2 {
         this.systemProperties = systemProperties;
     }
 
-    /**
-     * Execute goal.
-     *
-     * @throws org.apache.maven.plugin.MojoExecutionException execution of the main class or one of the threads it generated failed.
-     * @throws org.apache.maven.plugin.MojoFailureException
-     *                                something bad happened...
-     */
-    public void execute()
-        throws MojoExecutionException, MojoFailureException {
-
-        final String mainClass = this.mainClass;
-        List<URL> classPathURLs = createClassPathURLs();
-        String jarPath = artifactToExec.toString();
-        String[] arguments = this.arguments;
-        boolean cleanupDaemonThreads = this.cleanupDaemonThreads;
-        Properties originalSystemProperties = System.getProperties();
-        long daemonThreadJoinTimeout = this.daemonThreadJoinTimeout;
-        boolean stopUnresponsiveDaemonThreads = this.stopUnresponsiveDaemonThreads;
-        Property[] systemProperties = this.systemProperties;
-        final Log log = this.log;
-
-        new TaskRunner(mainClass, classPathURLs, jarPath, arguments, cleanupDaemonThreads, originalSystemProperties, daemonThreadJoinTimeout, stopUnresponsiveDaemonThreads, systemProperties, log).invoke();
+    public void execute() {
+        new ClassRunner(this.mainClass, createClassPathURLs(), artifactToExec.toString(), this.arguments, this.cleanupDaemonThreads, System.getProperties(), this.daemonThreadJoinTimeout, this.stopUnresponsiveDaemonThreads, this.systemProperties, this.log).invoke();
     }
 
     /**
@@ -174,13 +152,16 @@ public class ExecObject2 {
                 }
             }
 
-            log.warn(throwable);
+            if (log != null) {
+                log.warn(throwable);
+            } else {
+                System.err.println(throwable);
+            }
         }
     }
 
 
-
-    private List<URL> createClassPathURLs() throws MojoExecutionException {
+    private List<URL> createClassPathURLs() {
         List<URL> classpathURLs = new ArrayList<URL>();
         this.addRelevantProjectDependenciesToClasspath(classpathURLs);
         return classpathURLs;
@@ -192,9 +173,8 @@ public class ExecObject2 {
      * Takes includeProjectDependencies into consideration.
      *
      * @param path classpath of {@link java.net.URL} objects
-     * @throws org.apache.maven.plugin.MojoExecutionException if a problem happens
      */
-    private void addRelevantProjectDependenciesToClasspath(List<URL> path)throws MojoExecutionException {
+    private void addRelevantProjectDependenciesToClasspath(List<URL> path) {
         try {
             log.debug("Project Dependencies will be included.");
 
@@ -206,7 +186,7 @@ public class ExecObject2 {
                 path.add(artifact.getFile().toURI().toURL());
             }
         } catch (MalformedURLException e) {
-            throw new MojoExecutionException("Error during setting up classpath", e);
+            throw new RuntimeException("Error during setting up classpath", e);
         }
     }
 
@@ -228,7 +208,7 @@ public class ExecObject2 {
         }
     }
 
-    public static class TaskRunner {
+    public static class ClassRunner {
         private final String mainClass;
         private final Log log;
         private List<URL> classPathURLs;
@@ -240,7 +220,7 @@ public class ExecObject2 {
         private boolean stopUnresponsiveDaemonThreads;
         private Property[] systemProperties;
 
-        public TaskRunner(String mainClass, List<URL> classPathURLs, String jarPath, String[] arguments, boolean cleanupDaemonThreads, Properties originalSystemProperties, long daemonThreadJoinTimeout, boolean stopUnresponsiveDaemonThreads, Property[] systemProperties, Log log) {
+        public ClassRunner(String mainClass, List<URL> classPathURLs, String jarPath, String[] arguments, boolean cleanupDaemonThreads, Properties originalSystemProperties, long daemonThreadJoinTimeout, boolean stopUnresponsiveDaemonThreads, Property[] systemProperties, Log log) {
             this.mainClass = mainClass;
             this.classPathURLs = classPathURLs;
             this.jarPath = jarPath;
@@ -253,26 +233,24 @@ public class ExecObject2 {
             this.log = log;
         }
 
-        public void invoke() throws MojoExecutionException {
-            log.info("executing class " + mainClass + " in " + jarPath);
+        public void invoke() {
+            info("executing class " + mainClass + " in " + jarPath);
 
             if (null == arguments) {
                 arguments = new String[0];
             }
 
-            if (log.isDebugEnabled()) {
-                StringBuilder msg = new StringBuilder("Invoking : ");
-                msg.append(mainClass);
-                msg.append(".main(");
-                for (int i = 0; i < arguments.length; i++) {
-                    if (i > 0) {
-                        msg.append(", ");
-                    }
-                    msg.append(arguments[i]);
+            StringBuilder msg = new StringBuilder("Invoking : ");
+            msg.append(mainClass);
+            msg.append(".main(");
+            for (int i = 0; i < arguments.length; i++) {
+                if (i > 0) {
+                    msg.append(", ");
                 }
-                msg.append(")");
-                log.debug(msg);
+                msg.append(arguments[i]);
             }
+            msg.append(")");
+            debug(msg.toString());
 
             IsolatedThreadGroup threadGroup = new IsolatedThreadGroup(mainClass, log /*name*/);
             final String[] finalArguments = arguments;
@@ -282,11 +260,11 @@ public class ExecObject2 {
                         Method main = Thread.currentThread().getContextClassLoader().loadClass(mainClass)
                             .getMethod("main", new Class[]{String[].class});
                         if (!main.isAccessible()) {
-                            log.debug("Setting accessibility to true in order to invoke main().");
+                            debug("Setting accessibility to true in order to invoke main().");
                             main.setAccessible(true);
                         }
                         if (!Modifier.isStatic(main.getModifiers())) {
-                            throw new MojoExecutionException(
+                            throw new RuntimeException(
                                 "Can't call main(String[])-method because it is not static.");
                         }
                         main.invoke(null, new Object[]{finalArguments});
@@ -318,7 +296,7 @@ public class ExecObject2 {
                 try {
                     threadGroup.destroy();
                 } catch (IllegalThreadStateException e) {
-                    log.warn("Couldn't destroy threadgroup " + threadGroup, e);
+                    warn("Couldn't destroy threadgroup " + threadGroup, e);
                 }
             }
 
@@ -328,27 +306,28 @@ public class ExecObject2 {
 
             synchronized (threadGroup) {
                 if (threadGroup.uncaughtException != null) {
-                    throw new MojoExecutionException("An exception occured while executing the Java class. "
+                    throw new RuntimeException("An exception occured while executing the Java class. "
                         + threadGroup.uncaughtException.getMessage(),
                         threadGroup.uncaughtException);
                 }
             }
         }
 
+
         /**
          * Set up a classloader for the execution of the main class.
          *
-         * @return the classloader
-         * @throws org.apache.maven.plugin.MojoExecutionException if a problem happens
          * @param classpathURLs
+         * @return the classloader
          */
-        private ClassLoader getClassLoader(List<URL> classpathURLs) throws MojoExecutionException {
+        private ClassLoader getClassLoader(List<URL> classpathURLs) {
 
             return new URLClassLoader(classpathURLs.toArray(new URL[classpathURLs.size()]));
         }
 
         /**
          * Pass any given system properties to the java system properties.
+         *
          * @param systemProperties
          */
         private void setSystemProperties(Property[] systemProperties) {
@@ -379,18 +358,20 @@ public class ExecObject2 {
 
         private void joinThread(Thread thread, long timeoutMsecs) {
             try {
-                log.debug("joining on thread " + thread);
+                String s = "joining on thread " + thread;
+                debug(s);
                 thread.join(timeoutMsecs);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();   // good practice if don't throw
-                log.warn("interrupted while joining against thread " + thread, e);   // not expected!
+                warn("interrupted while joining against thread " + thread, e);   // not expected!
             }
             if (thread.isAlive()) //generally abnormal
             {
-                log.warn("thread " + thread + " was interrupted but is still alive after waiting at least "
+                warn("thread " + thread + " was interrupted but is still alive after waiting at least "
                     + timeoutMsecs + "msecs");
             }
         }
+
 
         private Collection getActiveThreads(ThreadGroup threadGroup) {
             Thread[] threads = new Thread[threadGroup.activeCount()];
@@ -411,7 +392,7 @@ public class ExecObject2 {
                 //   or if something else interrupted it ( isInterrupted() ).
                 for (Iterator iter = threads.iterator(); iter.hasNext(); ) {
                     Thread thread = (Thread) iter.next();
-                    log.debug("interrupting thread " + thread);
+                    debug("interrupting thread " + thread);
                     thread.interrupt();
                 }
                 // Now join with a timeout and call stop() (assuming flags are set right)
@@ -434,15 +415,16 @@ public class ExecObject2 {
                     }
                     uncooperativeThreads.add(thread); // ensure we don't process again
                     if (stopUnresponsiveDaemonThreads) {
-                        log.warn("thread " + thread + " will be Thread.stop()'ed");
+                        warn("thread " + thread + " will be Thread.stop()'ed");
                         thread.stop();
                     } else {
-                        log.warn("thread " + thread + " will linger despite being asked to die via interruption");
+                        warn("thread " + thread + " will linger despite being asked to die via interruption");
                     }
                 }
             }
+
             if (!uncooperativeThreads.isEmpty()) {
-                log.warn("NOTE: " + uncooperativeThreads.size() + " thread(s) did not finish despite being asked to "
+                warn("NOTE: " + uncooperativeThreads.size() + " thread(s) did not finish despite being asked to "
                     + " via interruption. This is not a problem with exec:java, it is a problem with the running code."
                     + " Although not serious, it should be remedied.");
             } else {
@@ -451,10 +433,30 @@ public class ExecObject2 {
                     // TODO this may be nothing; continue on anyway; perhaps don't even log in future
                     Thread[] threadsArray = new Thread[1];
                     threadGroup.enumerate(threadsArray);
-                    log.debug("strange; " + activeCount
+                    debug("strange; " + activeCount
                         + " thread(s) still active in the group " + threadGroup + " such as " + threadsArray[0]);
                 }
             }
+        }
+
+        private void debug(String s) {
+            if (log != null)
+                log.debug(s);
+        }
+
+        private void info(String s) {
+            if (log != null)
+                log.info(s);
+        }
+
+        private void warn(String s, Exception e) {
+            if (log != null)
+                log.warn(s, e);
+        }
+
+        private void warn(String s) {
+            if (log != null)
+                log.warn(s);
         }
     }
 }

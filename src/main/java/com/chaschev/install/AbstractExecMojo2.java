@@ -1,4 +1,4 @@
-package com.chaschev;
+package com.chaschev.install;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;

@@ -1,4 +1,4 @@
-package com.chaschev;
+package com.chaschev.install;
 
 /*******************************************************************************
  * Copyright (c) 2010, 2013 Sonatype, Inc.

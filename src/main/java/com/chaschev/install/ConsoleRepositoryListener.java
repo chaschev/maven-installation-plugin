@@ -1,4 +1,4 @@
-package com.chaschev;
+package com.chaschev.install;
 
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.RepositoryEvent;

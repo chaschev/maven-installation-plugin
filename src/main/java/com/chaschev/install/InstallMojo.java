@@ -1,4 +1,4 @@
-package com.chaschev;
+package com.chaschev.install;
 
 /*
  * Copyright 2001-2005 The Apache Software Foundation.
@@ -17,7 +17,9 @@ package com.chaschev;
  */
 
 import com.chaschev.chutils.util.OpenBean2;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.maven.DefaultMaven;
@@ -28,13 +30,18 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResult;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Lists.transform;
 
 @Mojo(name = "install", requiresProject = false, threadSafe = true)
 public class InstallMojo extends AbstractExecMojo2 {
@@ -66,14 +73,19 @@ public class InstallMojo extends AbstractExecMojo2 {
 
             Artifact artifact = resolveArtifact(artifactName);
 
+            List<ArtifactResult> dependencies = Lists.newArrayList(getDependencies(artifact));
+
             if(className != null){
-                List<ArtifactResult> artifactResults = getDependencies(artifact);
                 new ExecObject2(getLog(),
-                    artifact, artifactResults, className,
+                    artifact, dependencies, className,
                     parseArgs(),
                     systemProperties
                 ).execute();
             }
+
+
+
+
 
             Class<?> installation = new URLClassLoader(new URL[]{artifact.getFile().toURI().toURL()}).loadClass("Installation");
 
@@ -85,33 +97,21 @@ public class InstallMojo extends AbstractExecMojo2 {
 
             File installToDir = new File(installTo);
 
+            File classPathFile = writeClasspath(artifact, dependencies, installToDir);
+
             for (Object[] entry : entries) {
                 String shortCut = (String) entry[0];
                 String className = ((Class)entry[1]).getName();
 
-
                 File file;
                 if(SystemUtils.IS_OS_WINDOWS){
-
                     FileUtils.writeStringToFile(
                         file = new File(installToDir, shortCut + ".bat"),
-                        String.format("@mvn -q installation:exec -Dartifact=%s:%s -Dversion=%s -Dclass=%s -Dargs=\"%s\"",
-                            artifact.getGroupId(),
-                            artifact.getArtifactId(),
-                            artifact.getBaseVersion(),
-                            className,
-                            "%*")
-                    );
+                        "@" + createLaunchString(className, classPathFile) + " %*");
                 }else{
                     FileUtils.writeStringToFile(
                         file = new File(installToDir, shortCut + ".sh"),
-                        String.format("mvn -q installation:exec -Dartifact=%s:%s -Dversion=%s -Dclass=%s -Dargs=\"%s\"",
-                            artifact.getGroupId(),
-                            artifact.getArtifactId(),
-                            artifact.getBaseVersion(),
-                            className,
-                            "$*")
-                    );
+                        createLaunchString(className, classPathFile) + " $*");
                 }
 
                 getLog().info("created shortcut: " + shortCut + " -> " + file.getAbsolutePath());
@@ -126,6 +126,32 @@ public class InstallMojo extends AbstractExecMojo2 {
         }
     }
 
+    private static String createLaunchString(String className, File classPathFile) {
+        return MessageFormat.format("{0} -cp \"{1}\" {2} {3} {4} ",
+            new File(SystemUtils.getJavaHome(), "bin/java.exe "), getJarByClass(Runner.class).getAbsolutePath(), Runner.class.getName(), classPathFile.getAbsolutePath(), className);
+    }
+
+    private static File writeClasspath(Artifact artifact, List<ArtifactResult> dependencies, File installToDir) throws IOException {
+        ArrayList<File> classPathFiles = newArrayList(transform(dependencies, new Function<ArtifactResult, File>() {
+            @Override
+            public File apply(@Nullable ArtifactResult artifactResult) {
+                return artifactResult.getArtifact().getFile();
+            }
+        }));
+
+        classPathFiles.add(getJarByClass(Runner.class));
+
+        File file = new File(installToDir, artifact.getGroupId() + "." + artifact.getArtifactId());
+        FileUtils.writeLines(file, transform(classPathFiles, new Function<File, Object>() {
+            @Override
+            public Object apply(File file) {
+                return file.getAbsolutePath();
+            }
+        }));
+
+        return file;
+    }
+
     private String findPath() throws MojoFailureException {
         String path = Optional.fromNullable(System.getenv("path")).or(System.getenv("PATH"));
 
@@ -133,8 +159,7 @@ public class InstallMojo extends AbstractExecMojo2 {
 
         String javaHomeAbsPath = SystemUtils.getJavaHome().getParentFile().getAbsolutePath();
 
-        File mavenHome = new File(DefaultMaven.class.getProtectionDomain().getCodeSource().getLocation().getFile()).getParentFile().getParentFile();
-        String mavenHomeAbsPath = mavenHome.getAbsolutePath();
+        String mavenHomeAbsPath = getMavenHomeByClass(DefaultMaven.class).getAbsolutePath();
 
         List<MatchingPath> matchingPaths = new ArrayList<MatchingPath>();
 
@@ -167,6 +192,14 @@ public class InstallMojo extends AbstractExecMojo2 {
         }
 
         return matchingPaths.get(0).path;
+    }
+
+    private static File getMavenHomeByClass(Class<?> aClass) {
+        return getJarByClass(aClass).getParentFile().getParentFile();
+    }
+
+    public static File getJarByClass(Class<?> aClass) {
+        return new File(aClass.getProtectionDomain().getCodeSource().getLocation().getFile());
     }
 
     private static boolean isWritable(File dir) {
