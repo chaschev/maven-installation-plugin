@@ -118,6 +118,18 @@
             <version>${aetherVersion}</version>
         </dependency>
         <dependency>
+            <groupId>com.chaschev</groupId>
+            <artifactId>chutils</artifactId>
+            <version>1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
             <groupId>org.eclipse.aether</groupId>
             <artifactId>aether-transport-file</artifactId>
             <version>${aetherVersion}</version>
@@ -161,12 +173,15 @@
                     </execution>
                 </executions>
             </plugin>
+<!--
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
-                    <releaseProfiles>apache-release,rat,run-its</releaseProfiles><!-- TODO add to parent pom -->
+                    <releaseProfiles>apache-release,rat,run-its</releaseProfiles>&lt;!&ndash; TODO add to parent pom &ndash;&gt;
                 </configuration>
             </plugin>
+-->
+<!--
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>animal-sniffer-maven-plugin</artifactId>
@@ -188,6 +203,7 @@
                     </execution>
                 </executions>
             </plugin>
+-->
 
         </plugins>
         <extensions>
