@@ -1,11 +1,10 @@
 package com.chaschev;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.resolution.ArtifactResult;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -20,7 +19,7 @@ import java.util.*;
  * @author Jerome Lacoste <jerome@coffeebreaks.org>
  * @version $Id: ExecMojo.java 14727 2011-09-15 19:58:00Z rfscholte $
  */
-public class ExecObject {
+public class ExecObject2 {
     private Log log ;
 
     /**
@@ -32,9 +31,9 @@ public class ExecObject {
     @Parameter(defaultValue = "runtime")
     protected String classpathScope;
 
-    private Artifact artifactToExec;
+    private org.eclipse.aether.artifact.Artifact artifactToExec;
 
-    ArtifactResolutionResult artifactResolutionResult;
+    List<ArtifactResult> artifactResults;
 
 
     /**
@@ -132,10 +131,10 @@ public class ExecObject {
 
     private Properties originalSystemProperties;
 
-    public ExecObject(Log log, Artifact artifactToExec, ArtifactResolutionResult artifactResolutionResult, String mainClass, String[] arguments, Property[] systemProperties) {
+    public ExecObject2(Log log, org.eclipse.aether.artifact.Artifact artifactToExec, List<ArtifactResult> artifactResults, String mainClass, String[] arguments, Property[] systemProperties) {
         this.log = log;
         this.artifactToExec = artifactToExec;
-        this.artifactResolutionResult = artifactResolutionResult;
+        this.artifactResults = artifactResults;
         this.mainClass = mainClass;
         this.arguments = arguments;
         this.systemProperties = systemProperties;
@@ -144,12 +143,14 @@ public class ExecObject {
     /**
      * Execute goal.
      *
-     * @throws MojoExecutionException execution of the main class or one of the threads it generated failed.
+     * @throws org.apache.maven.plugin.MojoExecutionException execution of the main class or one of the threads it generated failed.
      * @throws org.apache.maven.plugin.MojoFailureException
      *                                something bad happened...
      */
     public void execute()
         throws MojoExecutionException, MojoFailureException {
+
+        log.info("executing class " + mainClass + " in " + artifactToExec);
 
         if (null == arguments) {
             arguments = new String[0];
@@ -371,7 +372,7 @@ public class ExecObject {
      * Set up a classloader for the execution of the main class.
      *
      * @return the classloader
-     * @throws MojoExecutionException if a problem happens
+     * @throws org.apache.maven.plugin.MojoExecutionException if a problem happens
      */
     private ClassLoader getClassLoader() throws MojoExecutionException {
         List<URL> classpathURLs = new ArrayList<URL>();
@@ -387,26 +388,23 @@ public class ExecObject {
      * Takes includeProjectDependencies into consideration.
      *
      * @param path classpath of {@link java.net.URL} objects
-     * @throws MojoExecutionException if a problem happens
+     * @throws org.apache.maven.plugin.MojoExecutionException if a problem happens
      */
     private void addRelevantProjectDependenciesToClasspath(List<URL> path)throws MojoExecutionException {
         try {
             log.debug("Project Dependencies will be included.");
 
-            Set<Artifact> artifacts = artifactResolutionResult.getArtifacts();
+            List<ArtifactResult> artifacts = artifactResults;
 
-            for (Artifact it : artifacts) {
-                log.debug("Adding artifact to classpath : " + it.getArtifactId());
-                path.add(it.getFile().toURI().toURL());
+            for (ArtifactResult it : artifacts) {
+                org.eclipse.aether.artifact.Artifact artifact = it.getArtifact();
+                log.debug("adding artifact to classpath : " + artifact.getArtifactId() + " from repo " + it.getRepository().getId());
+                path.add(artifact.getFile().toURI().toURL());
             }
         } catch (MalformedURLException e) {
             throw new MojoExecutionException("Error during setting up classpath", e);
         }
-
     }
-
-
-
 
     /**
      * Stop program execution for nn millis.

@@ -32,7 +32,6 @@ import org.apache.maven.plugin.PluginManager;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 
@@ -40,12 +39,12 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Mojo( name = "exec", requiresProject = false, threadSafe = true )
+@Mojo( name = "execLegacy", requiresProject = false, threadSafe = true )
 public class ExecMojo extends AbstractMojo {
     /**
      * Artifact to execute. I.e. com.chaschev.cap4j:1.0:your-class
      */
-    @Parameter(property = "artifact")
+    @Parameter(property = "artifact", required = true)
     private String artifactString;
 
     /**
@@ -63,12 +62,6 @@ public class ExecMojo extends AbstractMojo {
 
     @Parameter
     private Property[] systemProperties;
-
-    /**
-     * Plugin configuration to use in the execution.
-     */
-    @Parameter
-    private XmlPlexusConfiguration configuration;
 
     /**
      *
@@ -116,16 +109,14 @@ public class ExecMojo extends AbstractMojo {
     //execute com.chaschev:cap4:1.0-SNAPSHOT:com.chaschev.cap4.main.Cap4j
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        getLog().info("hi from mojo!");
-
-        System.out.println(this);
+//        System.out.println(this);
 
         if(artifactString != null){
             getLog().info("executing artifact " + artifactString);
 
             String[] strings = artifactString.split(":");
 
-            System.out.println(Arrays.asList(strings));
+//            System.out.println(Arrays.asList(strings));
 
             boolean hasClassifier = strings.length == 5;
 
@@ -133,7 +124,7 @@ public class ExecMojo extends AbstractMojo {
                 throw new MojoExecutionException("error: expected format is groupId:artifactId:version:[classifier:]className");
             }
 
-            System.out.println(11);
+//            System.out.println(11);
 
             String groupId = strings[0];
             String artifactId = strings[1];
@@ -142,11 +133,11 @@ public class ExecMojo extends AbstractMojo {
             String classifier;
 
             if(hasClassifier){
-                System.out.println(12);
+//                System.out.println(12);
                 classifier = strings[3];
                 className = strings[4];
             }else{
-                System.out.println(13);
+//                System.out.println(13);
                 classifier = null;
                 className = strings[3];
             }
@@ -211,7 +202,6 @@ public class ExecMojo extends AbstractMojo {
         final StringBuilder sb = new StringBuilder("ExecMojo{");
         sb.append(", artifactString='").append(artifactString).append('\'');
         sb.append(", remoteRepositories='").append(remoteRepositories).append('\'');
-        sb.append(", configuration=").append(configuration);
         sb.append(", artifactFactory=").append(artifactFactory);
         sb.append(", artifactResolver=").append(artifactResolver);
         sb.append(", artifactRepositoryFactory=").append(artifactRepositoryFactory);
