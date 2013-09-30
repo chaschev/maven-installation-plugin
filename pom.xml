@@ -39,7 +39,7 @@
     </properties>
 
 
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <name>Install Plugin Mojo</name>
     <url>http://maven.apache.org</url>
     <dependencies>
