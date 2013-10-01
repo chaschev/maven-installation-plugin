@@ -27,7 +27,10 @@ public class Runner {
 
         String line;
 
+        String userHome = System.getProperty("user.home");
+
         while( (line = reader.readLine()) != null){
+            line = line.replace("$HOME", userHome);
             classpathEntries.add(new File(line).toURI().toURL());
         }
 

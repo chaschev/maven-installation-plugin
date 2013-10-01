@@ -9,6 +9,9 @@
     <groupId>com.chaschev</groupId>
     <artifactId>installation-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
+    <version>1.2-SNAPSHOT</version>
+    <name>Install Plugin Mojo</name>
+    <url>http://maven.apache.org</url>
 
     <scm>
         <connection>scm:git:git@github.com:chaschev/install-plugin.git</connection>
@@ -68,9 +71,6 @@
         </profile>
     </profiles>
 
-    <version>1.2-SNAPSHOT</version>
-    <name>Install Plugin Mojo</name>
-    <url>http://maven.apache.org</url>
     <dependencies>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -239,8 +239,13 @@
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-container-default</artifactId>
             <version>1.5.5</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.collections</groupId>
+                    <artifactId>google-collections</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
-
     </dependencies>
 
     <build>

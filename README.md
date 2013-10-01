@@ -6,7 +6,7 @@ Installation is a plugin which installs and executes your plugins. It is similar
 It's built for Maven, so it uses a bit different syntax:
 
 ```bash
-$ mvn installation:install groupId:artifactId
+$ mvn installation:install -Dartifact=groupId:artifactId
 ```
     
 And this will install your latest artifact version to the system.
@@ -28,7 +28,7 @@ Add these lines to your settings.xml (`$HOME/.m2/settings.xml`):
 
 To install a dummy command to your system, in console run
 
-    $ mvn installation:install com.chaschev:chutils
+    $ mvn installation:install -Dartifact=com.chaschev:chutils
     
 Now, command `chutils` from artifact `com.chaschev:chutils:1.1` should be available on your command line with all of it's dependencies. To check this run
 
@@ -102,7 +102,7 @@ Contributions are welcome! Tips below might be useful for testing and extending 
 
 Running from remote repository:
 
-     $ mvn -U com.chaschev:installation-maven-plugin:1.2-SNAPSHOT:install -Dartifact=com.chaschev:chutils
+     $ mvn -U com.chaschev:installation-maven-plugin:1.X-SNAPSHOT:install -Dartifact=com.chaschev:chutils
      
 This will force an update (`-U`) and will explicitly specify the Installation plugin version.
 

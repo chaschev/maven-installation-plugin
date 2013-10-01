@@ -22,8 +22,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import joptsimple.internal.Strings;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.maven.DefaultMaven;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -121,7 +121,7 @@ public class InstallMojo extends AbstractExecMojo2 {
                         file,
                         createLaunchString(className, classPathFile) + " $*");
                     try {
-                        file.setExecutable(true);
+                        file.setExecutable(true, false);
                     } catch (Exception e) {
                         getLog().warn("could not make '" + file.getAbsolutePath() + "' executable: " + e.toString());
                     }
@@ -140,8 +140,20 @@ public class InstallMojo extends AbstractExecMojo2 {
     }
 
     private static String createLaunchString(String className, File classPathFile) {
+        String jarPath = getJarByClass(Runner.class).getAbsolutePath();
+
+        if(IS_OS_UNIX){
+            String installerUserHome = getInstallerHomeDir(jarPath);
+
+            jarPath = jarPath.replace(installerUserHome, "$HOME");
+        }
+
         return MessageFormat.format("{0} -cp \"{1}\" {2} {3} {4} ",
-            javaExePath(), getJarByClass(Runner.class).getAbsolutePath(), Runner.class.getName(), classPathFile.getAbsolutePath(), className);
+            javaExePath(), jarPath, Runner.class.getName(), classPathFile.getAbsolutePath(), className);
+    }
+
+    private static String getInstallerHomeDir(String jarPath) {
+        return new File(StringUtils.substringBefore(jarPath, "/com/chaschev")).getParentFile().getParentFile().getAbsolutePath();
     }
 
     private static File javaExePath() {
@@ -149,6 +161,10 @@ public class InstallMojo extends AbstractExecMojo2 {
     }
 
     private static File writeClasspath(Artifact artifact, List<ArtifactResult> dependencies, File installToDir) throws IOException {
+        final String jarPath = getJarByClass(Runner.class).getAbsolutePath();
+
+        final String installerUserHome = getInstallerHomeDir(jarPath);
+
         ArrayList<File> classPathFiles = newArrayList(transform(dependencies, new Function<ArtifactResult, File>() {
             @Override
             public File apply(ArtifactResult artifactResult) {
@@ -159,10 +175,14 @@ public class InstallMojo extends AbstractExecMojo2 {
         classPathFiles.add(getJarByClass(Runner.class));
 
         File file = new File(installToDir, artifact.getGroupId() + "." + artifact.getArtifactId());
-        FileUtils.writeLines(file, transform(classPathFiles, new Function<File, Object>() {
+        FileUtils.writeLines(file, transform(classPathFiles, new Function<File, String>() {
             @Override
-            public Object apply(File file) {
-                return file.getAbsolutePath();
+            public String apply(File file) {
+                if(IS_OS_UNIX){
+                    return file.getAbsolutePath().replace(installerUserHome, "$HOME");
+                }else{
+                    return file.getAbsolutePath();
+                }
             }
         }));
 
@@ -179,6 +199,10 @@ public class InstallMojo extends AbstractExecMojo2 {
         String mavenHomeAbsPath = getMavenHomeByClass(DefaultMaven.class).getAbsolutePath();
 
         List<MatchingPath> matchingPaths = new ArrayList<MatchingPath>();
+
+        final LinkedHashSet<File> knownBinFolders = Sets.newLinkedHashSet(
+            Lists.transform(Arrays.asList("/usr/local/bin", "/usr/local/sbin"), PATH_TO_FILE)
+        );
 
         for (String pathEntry : pathEntries) {
             File entryFile = new File(pathEntry);
@@ -197,10 +221,6 @@ public class InstallMojo extends AbstractExecMojo2 {
         }
 
         if(IS_OS_UNIX && matchingPaths.isEmpty()){
-            final LinkedHashSet<File> knownBinFolders = Sets.newLinkedHashSet(
-                Lists.transform(Arrays.asList("/usr/local/bin", "/usr/local/sbin", "/usr/bin"), PATH_TO_FILE)
-            );
-
             getLog().warn("didn't find maven/jdk writable roots available on path, trying common unix paths: " + knownBinFolders);
 
             final LinkedHashSet<File> pathEntriesSet = Sets.newLinkedHashSet(
@@ -217,8 +237,10 @@ public class InstallMojo extends AbstractExecMojo2 {
         Collections.sort(matchingPaths);
 
         if(matchingPaths.isEmpty()){
-            throw new MojoFailureException("Could not find a bin folder to write to. Did you use sudo? Tried: \n" + Joiner.on("\n")
-                .join(mavenHomeAbsPath, javaHomeAbsPath, Strings.join(pathEntries, "\n")));
+            throw new MojoFailureException("Could not find a bin folder to write to. Tried: \n" + Joiner.on("\n")
+                .join(mavenHomeAbsPath, javaHomeAbsPath) + "\n" +
+                (IS_OS_UNIX ? knownBinFolders + "\n" : "") +
+                    " but they don't appear on the path or are not writable. You may try running as administrator or specifying -DinstallTo=your-bin-dir-path parameter");
         }
 
         return matchingPaths.get(0).path;
