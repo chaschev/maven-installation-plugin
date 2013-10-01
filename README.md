@@ -70,8 +70,8 @@ Plugin fetches an artifact with all dependences to your local repository. It als
 Requirements
 ------------
 
-- JDK 6
-- Maven 3.0.0-3.0.5. (3.1.0 is not supported)
+- JRE 1.6+ to install, JDK 1.6+ to build
+- Maven 3.0.X (3.1.0 is not supported)
  
 How to Use
 ----------
@@ -116,8 +116,8 @@ Install your artifact to the local repository
     
 Next try running your shortcuts. If there are no exceptions, the installation was ok.
 
-Executing remotely
-==================
+Running remote artifact
+=======================
 
 Use `installation:exec` to download and run your artifact. Example:
 

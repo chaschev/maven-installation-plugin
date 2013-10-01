@@ -143,9 +143,7 @@ public class InstallMojo extends AbstractExecMojo2 {
     private String createLaunchScript(String className, File classPathFile) {
         String jarPath = getJarByClass(Runner.class).getAbsolutePath();
 
-        boolean unix = IS_OS_UNIX;
-
-        if (unix) {
+        if (IS_OS_UNIX) {
             String installerUserHome = getInstallerHomeDir(jarPath);
 
             jarPath = jarPath.replace(installerUserHome, "$HOME");
@@ -154,20 +152,46 @@ public class InstallMojo extends AbstractExecMojo2 {
         String appLaunchingString = MessageFormat.format("{0} -cp \"{1}\" {2} {3} {4}",
             javaExePath(), jarPath, Runner.class.getName(), classPathFile.getAbsolutePath(), className);
 
+        return sudoInstallationSupportingScript(jarPath, appLaunchingString);
+    }
+
+    // Solution for sudo installation problem: if you first install the app by sudo mvn installation:install ...
+    // Then plugin which contains the Runner is not on the path of all other users because it has been installed to the root's repo!
+    // To solve this, we first check if the Runner is on the classpath (by running it with a control string).
+    // If it's not, then the plugin dependency is being fetched.
+
+    // A simpler and may be better option would be to supply a bootstrap (containing the Runner) dependency for the app.
+    // With this solution however there is no need in the dependency and no coupling.
+    private String sudoInstallationSupportingScript(String jarPath, String appLaunchingString) {
         String script;
 
+        boolean unix = IS_OS_UNIX;
         PluginDescriptor desc = (PluginDescriptor)getPluginContext().get("pluginDescriptor");
 
         if (unix) {
             appLaunchingString = appLaunchingString + " $*";
 
-            script = "todo";
+            script = MessageFormat.format("" +
+                "{0} -cp \"{1}\" {2} SMOKE_TEST_HUH 2> /dev/null\n" +
+                "\n" +
+                "rc=$?\n" +
+                "\n" +
+                "if [[ $rc != 0 ]] ; then\n" +
+                "    mvn -U {4}:{5}:{6}:fetch\n" +
+                "    {3}\n" +
+                "    exit $rc\n" +
+                "fi\n" +
+                "\n" +
+                "{3}\n",
+                javaExePath(), jarPath, Runner.class.getName(),
+                appLaunchingString,
+                desc.getGroupId(), desc.getArtifactId(), desc.getVersion());
         } else {
             appLaunchingString = "@" + appLaunchingString + " %*";
 
             script =
                 MessageFormat.format("" +
-                    "@{0} -cp \"{1}\" {2} SMOKE_TEST_HUH\n" +
+                    "@{0} -cp \"{1}\" {2} SMOKE_TEST_HUH 2> nul\n" +
                     "@IF ERRORLEVEL 1 GOTO nok\n" +
                     "{3}\n" +
                     "@goto leave\n\n" +
@@ -183,7 +207,6 @@ public class InstallMojo extends AbstractExecMojo2 {
                     desc.getGroupId(), desc.getArtifactId(), desc.getVersion());
 
         }
-
         return script;
     }
 
