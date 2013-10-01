@@ -50,7 +50,7 @@ Requirements
 ------------
 
 - JDK 6
-- Maven (todo check Maven versions)
+- Maven 3.0.0-3.0.5. (3.1.0 is not supported)
  
 How to Use
 ----------
