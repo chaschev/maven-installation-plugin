@@ -47,7 +47,7 @@ $ mvn installation:install -Dartifact=com.chaschev:chutils -DinstallTo=bin && ch
 [INFO]
 [INFO] --- installation-maven-plugin:1.2-SNAPSHOT:install (default-cli) @ standalone-pom ---
 [INFO] resolving artifact com.chaschev:chutils:jar:1.1
-[INFO] created shortcut: /home/andrey/bin/chutils -> com.chaschev.chutils.Main
+[INFO] created a shortcut: /home/andrey/bin/chutils -> com.chaschev.chutils.Main
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
@@ -65,7 +65,7 @@ Features
 
 ### How it works
 
-Plugin fetches an artifact with all dependences to your local repository. It also creates shortcuts which link to a `Runner` jar which launches your apps. This transition was made to support long classpaths on Windows.
+Plugin fetches an artifact with all dependences to your local repository. It also creates shortcuts which link to a Runner jar which launches your apps. This transition was made to support long classpaths on Windows.
 
 Requirements
 ------------

@@ -127,7 +127,7 @@ public class InstallMojo extends AbstractExecMojo2 {
                     }
                 }
 
-                getLog().info("created shortcut: " + file.getAbsolutePath() + " -> " + className);
+                getLog().info("created a shortcut: " + file.getAbsolutePath() + " -> " + className);
             }
         } catch (Exception e) {
             if(e instanceof RuntimeException){
