@@ -36,6 +36,27 @@ Now, command `chutils` from the artifact `com.chaschev:chutils:1.1` should be av
     
 and this should print you a greeting.
 
+##### Sample output.
+
+```
+$ mvn installation:install -Dartifact=com.chaschev:chutils -DinstallTo=bin && chutils Austin day
+
+[INFO] ------------------------------------------------------------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] ------------------------------------------------------------------------
+[INFO]
+[INFO] --- installation-maven-plugin:1.2-SNAPSHOT:install (default-cli) @ standalone-pom ---
+[INFO] resolving artifact com.chaschev:chutils:jar:1.1
+[INFO] created shortcut: /home/andrey/bin/chutils -> com.chaschev.chutils.Main
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+
+hi from chutils, Austin! have a good day!
+is guava with us?
+guava is here!
+```
+
 Features
 --------
 
@@ -123,14 +144,14 @@ Adding plugin repositories in `settings.xml`, i.e.:
           <snapshots><enabled>true</enabled></snapshots>
         </repository>
       </repositories>
-    <pluginRepositories>
-      <pluginRepository>
-        <id>snapshots-plugin-repo</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        <releases><enabled>false</enabled></releases>
-        <snapshots><enabled>true</enabled></snapshots>
-      </pluginRepository>
-    </pluginRepositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>snapshots-plugin-repo</id>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+          <releases><enabled>false</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
     </profile>
   </profiles>
   </activeProfiles>
