@@ -18,7 +18,11 @@ package com.chaschev.install;
 
 import com.chaschev.chutils.util.OpenBean2;
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import joptsimple.internal.Strings;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.maven.DefaultMaven;
@@ -35,31 +39,35 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_UNIX;
 
 @Mojo(name = "install", requiresProject = false, threadSafe = true)
 public class InstallMojo extends AbstractExecMojo2 {
+
+    public static final Function<String,File> PATH_TO_FILE = new Function<String, File>() {
+        public File apply(String s) {
+            return new File(s);
+        }
+    };
+
     public static final class MatchingPath implements Comparable<MatchingPath>{
-        boolean isJDK;
+
+        int type;
 
         String path;
 
-        public MatchingPath(boolean JDK, String path) {
-            isJDK = JDK;
+        public MatchingPath(int type, String path) {
+            this.type = type;
             this.path = path;
         }
 
         @Override
         public int compareTo(MatchingPath o) {
-            if(isJDK && !o.isJDK) return 1;
-            if(!isJDK && o.isJDK) return -1;
-
-            return path.compareTo(o.path);
+            return type - o.type;
         }
     }
 
@@ -68,7 +76,7 @@ public class InstallMojo extends AbstractExecMojo2 {
 
     public void execute() throws MojoExecutionException, MojoFailureException {
         try {
-            FindAvailableVersions.main(null);
+//            FindAvailableVersions.main(null);
             initialize();
 
             Artifact artifact = new DefaultArtifact(artifactName);
@@ -108,9 +116,15 @@ public class InstallMojo extends AbstractExecMojo2 {
                         file = new File(installToDir, shortCut + ".bat"),
                         "@" + createLaunchString(className, classPathFile) + " %*");
                 }else{
+                    file = new File(installToDir, shortCut);
                     FileUtils.writeStringToFile(
-                        file = new File(installToDir, shortCut + ".sh"),
+                        file,
                         createLaunchString(className, classPathFile) + " $*");
+                    try {
+                        file.setExecutable(true);
+                    } catch (Exception e) {
+                        getLog().warn("could not make '" + file.getAbsolutePath() + "' executable: " + e.toString());
+                    }
                 }
 
                 getLog().info("created shortcut: " + shortCut + " -> " + file.getAbsolutePath());
@@ -127,7 +141,11 @@ public class InstallMojo extends AbstractExecMojo2 {
 
     private static String createLaunchString(String className, File classPathFile) {
         return MessageFormat.format("{0} -cp \"{1}\" {2} {3} {4} ",
-            new File(SystemUtils.getJavaHome(), "bin/java.exe "), getJarByClass(Runner.class).getAbsolutePath(), Runner.class.getName(), classPathFile.getAbsolutePath(), className);
+            javaExePath(), getJarByClass(Runner.class).getAbsolutePath(), Runner.class.getName(), classPathFile.getAbsolutePath(), className);
+    }
+
+    private static File javaExePath() {
+        return new File(SystemUtils.getJavaHome(), "bin/" + (IS_OS_UNIX ? "java" : "java.exe"));
     }
 
     private static File writeClasspath(Artifact artifact, List<ArtifactResult> dependencies, File installToDir) throws IOException {
@@ -154,7 +172,7 @@ public class InstallMojo extends AbstractExecMojo2 {
     private String findPath() throws MojoFailureException {
         String path = Optional.fromNullable(System.getenv("path")).or(System.getenv("PATH"));
 
-        String[] pathEntries = path == null ? new String[0] : path.split(File.pathSeparator);
+        ArrayList<String> pathEntries = newArrayList(path == null ? new String[0] : path.split(File.pathSeparator));
 
         String javaHomeAbsPath = SystemUtils.getJavaHome().getParentFile().getAbsolutePath();
 
@@ -168,18 +186,30 @@ public class InstallMojo extends AbstractExecMojo2 {
 
             boolean writable = isWritable(entryFile);
 
+            getLog().debug("testing " + entryFile.getAbsolutePath() + ": " + (writable ? "writable": "not writable"));
+
             if(absPath.startsWith(javaHomeAbsPath)){
-                if(!writable){
-                    getLog().warn(absPath + " is not writable");
-                }else{
-                    matchingPaths.add(new MatchingPath(true, absPath));
-                }
+                addMatching(matchingPaths, absPath, writable, 1);
             } else
             if(absPath.startsWith(mavenHomeAbsPath)){
-                if(!writable){
-                    getLog().warn(absPath + " is not writable");
-                }else{
-                    matchingPaths.add(new MatchingPath(false, absPath));
+                addMatching(matchingPaths, absPath, writable, 2);
+            }
+        }
+
+        if(IS_OS_UNIX && matchingPaths.isEmpty()){
+            final LinkedHashSet<File> knownBinFolders = Sets.newLinkedHashSet(
+                Lists.transform(Arrays.asList("/usr/local/bin", "/usr/local/sbin", "/usr/bin"), PATH_TO_FILE)
+            );
+
+            getLog().warn("didn't find maven/jdk writable roots available on path, trying common unix paths: " + knownBinFolders);
+
+            final LinkedHashSet<File> pathEntriesSet = Sets.newLinkedHashSet(
+                Lists.transform(pathEntries, PATH_TO_FILE)
+            );
+
+            for (File knownBinFolder : knownBinFolders) {
+                if(pathEntriesSet.contains(knownBinFolder)){
+                    addMatching(matchingPaths, knownBinFolder.getAbsolutePath(), isWritable(knownBinFolder), 3);
                 }
             }
         }
@@ -187,10 +217,22 @@ public class InstallMojo extends AbstractExecMojo2 {
         Collections.sort(matchingPaths);
 
         if(matchingPaths.isEmpty()){
-            throw new MojoFailureException("could not find a bin folder to write to");
+            throw new MojoFailureException("Could not find a bin folder to write to. Did you use sudo? Tried: \n" + Joiner.on("\n")
+                .join(mavenHomeAbsPath, javaHomeAbsPath, Strings.join(pathEntries, "\n")));
         }
 
         return matchingPaths.get(0).path;
+    }
+
+    private void addMatching(List<MatchingPath> matchingPaths, String matchingPath, boolean writable, int type) {
+        if(writable){
+            getLog().info(matchingPath + " matches");
+
+            matchingPaths.add(new MatchingPath(type, matchingPath));
+        }else{
+            getLog().warn(matchingPath + " matches, but is not writable");
+
+        }
     }
 
     private static File getMavenHomeByClass(Class<?> aClass) {
