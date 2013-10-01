@@ -30,7 +30,7 @@ To install a dummy command to your system, in console run
 
     $ mvn installation:install -Dartifact=com.chaschev:chutils
     
-Now, command `chutils` from artifact `com.chaschev:chutils:1.1` should be available on your command line with all of it's dependencies. To check this run
+Now, command `chutils` from the artifact `com.chaschev:chutils:1.1` should be available on your command line with all of it's dependencies. To check this run
 
     $ chutils Austin Day
     

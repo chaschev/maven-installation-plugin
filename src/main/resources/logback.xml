@@ -23,11 +23,10 @@
     </appender>
 
 
-    <logger name="org.apache.http" level="INFO"/>
-    <logger name="com.ning.http.client" level="INFO"/>
+    <logger name="org.apache.http" level="WARN"/>
+    <logger name="com.ning.http.client" level="WARN"/>
 
-    <root level="debug">
+    <root level="info">
         <appender-ref ref="STDOUT" />
-
     </root>
 </configuration>
