@@ -34,11 +34,13 @@ import com.jcabi.log.Logger;
 import lombok.EqualsAndHashCode;
 import org.apache.maven.model.Exclusion;
 import org.sonatype.aether.artifact.Artifact;
+import org.sonatype.aether.resolution.ArtifactResult;
 import org.sonatype.aether.resolution.DependencyResolutionException;
 import org.sonatype.aether.util.artifact.JavaScopes;
 
 import javax.validation.constraints.NotNull;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * One root artifact found in the project.
@@ -98,9 +100,9 @@ final class RootArtifact {
             )
         );
         try {
-            for (Artifact child : this.children()) {
+            for (ArtifactResult child : this.children()) {
                 text.append("\n  ").append(child);
-                if (this.excluded(child)) {
+                if (this.excluded(child.getArtifact())) {
                     text.append(" (excluded)");
                 }
             }
@@ -124,9 +126,9 @@ final class RootArtifact {
      * @throws org.sonatype.aether.resolution.DependencyResolutionException If fails to resolve
      */
     @Cacheable(forever = true)
-    public Collection<Artifact> children()
+    public List<ArtifactResult> children()
         throws DependencyResolutionException {
-        return this.aether.resolve(this.art, JavaScopes.COMPILE);
+        return this.aether.resolve(this.art, JavaScopes.COMPILE).getArtifactResults();
     }
 
     /**

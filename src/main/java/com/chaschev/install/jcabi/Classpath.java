@@ -36,6 +36,7 @@ import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 import org.sonatype.aether.artifact.Artifact;
+import org.sonatype.aether.resolution.ArtifactResult;
 import org.sonatype.aether.resolution.DependencyResolutionException;
 import org.sonatype.aether.util.artifact.DefaultArtifact;
 import org.sonatype.aether.util.artifact.JavaScopes;
@@ -203,14 +204,15 @@ public final class Classpath extends AbstractSet<File> implements Set<File> {
     private Set<Artifact> artifacts() throws DependencyResolutionException {
         final Set<Artifact> artifacts = new LinkedHashSet<Artifact>(0);
         for (RootArtifact root : this.roots()) {
-            for (Artifact child : root.children()) {
-                if (Classpath.contains(child, artifacts)) {
+            for (ArtifactResult child : root.children()) {
+                Artifact childArtifact = child.getArtifact();
+                if (Classpath.contains(childArtifact, artifacts)) {
                     continue;
                 }
-                if (root.excluded(child)) {
+                if (root.excluded(childArtifact)) {
                     continue;
                 }
-                artifacts.add(child);
+                artifacts.add(childArtifact);
             }
         }
         return artifacts;
