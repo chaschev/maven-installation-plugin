@@ -20,8 +20,9 @@ import com.google.common.base.Preconditions;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.resolution.ArtifactResult;
+import org.sonatype.aether.artifact.Artifact;
+import org.sonatype.aether.resolution.ArtifactResult;
+import org.sonatype.aether.util.artifact.DefaultArtifact;
 
 import java.util.List;
 
@@ -34,12 +35,18 @@ public class ExecMojo2 extends AbstractExecMojo2 {
         try {
             initialize();
 
-            Artifact artifact = resolveArtifact(artifactName);
+            Artifact artifact = new DefaultArtifact(artifactName);
 
-            List<ArtifactResult> artifactResults = getDependencies(artifact);
+            ArtifactResults2 artifactResults = resolveArtifact(artifact);
+
+            artifact = artifactResults.artifact;
+
+            List<ArtifactResult> artifacts = artifactResults.getDependencies();
+
+//            List<ArtifactResult> artifactResults = getDependencies(artifact);
 
             new ExecObject2(getLog(),
-                artifact, artifactResults, className,
+                artifact, artifacts, className,
                 parseArgs(),
                 systemProperties
             ).execute();

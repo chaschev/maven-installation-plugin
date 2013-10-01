@@ -12,14 +12,8 @@ package com.chaschev.install;
  *    Sonatype, Inc. - initial API and implementation
  *******************************************************************************/
 
-import com.chaschev.install.ConsoleRepositoryListener;
-import com.chaschev.install.ConsoleTransferListener;
-import com.chaschev.install.guice.GuiceRepositorySystemFactory;
-import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.RemoteRepository;
+import org.sonatype.aether.RepositorySystem;
+import org.sonatype.aether.repository.RemoteRepository;
 
 /**
  * A helper to boot the repository system and a repository system session.
@@ -29,39 +23,18 @@ public class Booter
 
     public static RepositorySystem newRepositorySystem()
     {
-//        return ManualRepositorySystemFactory.newRepositorySystem();
-        return GuiceRepositorySystemFactory.newRepositorySystem();
-//        return PlexusRepositorySystemFactory.newRepositorySystem();
-//        return new DefaultRepositorySystem();
+        return ManualRepositorySystemFactory.newRepositorySystem();
     }
 
-    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system){
-        return newRepositorySystemSession(system, new LocalRepository("target/repo4"));
-    }
-
-    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, LocalRepository localRepo)
-    {
-        DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
-
-        session.setLocalRepositoryManager( system.newLocalRepositoryManager( session, localRepo) );
-
-        session.setTransferListener( new ConsoleTransferListener() );
-        session.setRepositoryListener( new ConsoleRepositoryListener() );
-
-        // uncomment to generate dirty trees
-        // session.setDependencyGraphTransformer( null );
-
-        return session;
-    }
 
     public static RemoteRepository newCentralRepository()
     {
-        return new RemoteRepository.Builder( "central", "default", "http://repo1.maven.org/maven2/" ).build();
+        return new RemoteRepository( "central", "default", "http://repo1.maven.org/maven2/" );
     }
 
     public static RemoteRepository newSonatypeRepository()
     {
-        return new RemoteRepository.Builder( "sonatype-snapshots", "default", "https://oss.sonatype.org/content/repositories/snapshots/" ).build();
+        return new RemoteRepository( "sonatype-snapshots", "default", "https://oss.sonatype.org/content/repositories/snapshots/" );
     }
 
 }

@@ -10,10 +10,10 @@
  *******************************************************************************/
 package com.chaschev.install;
 
-import org.eclipse.aether.transfer.AbstractTransferListener;
-import org.eclipse.aether.transfer.MetadataNotFoundException;
-import org.eclipse.aether.transfer.TransferEvent;
-import org.eclipse.aether.transfer.TransferResource;
+import org.sonatype.aether.transfer.AbstractTransferListener;
+import org.sonatype.aether.transfer.MetadataNotFoundException;
+import org.sonatype.aether.transfer.TransferEvent;
+import org.sonatype.aether.transfer.TransferResource;
 
 import java.io.PrintStream;
 import java.text.DecimalFormat;
@@ -105,7 +105,8 @@ public class ConsoleTransferListener
             String throughput = "";
             long duration = System.currentTimeMillis() - resource.getTransferStartTime();
             if (duration > 0) {
-                long bytes = contentLength - resource.getResumeOffset();
+                long bytes = contentLength - 0;
+                    //resource.getResumeOffset();
                 DecimalFormat format = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.ENGLISH));
                 double kbPerSec = (bytes / 1024.0) / (duration / 1000.0);
                 throughput = " at " + format.format(kbPerSec) + " KB/sec";

@@ -17,12 +17,8 @@ package com.chaschev.install;
  */
 
 import com.chaschev.chutils.util.OpenBean2;
-import com.chaschev.install.ExecObject2;
-import com.chaschev.install.FindAvailableVersions;
-import com.chaschev.install.Runner;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.maven.DefaultMaven;
@@ -30,10 +26,10 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.resolution.ArtifactResult;
+import org.sonatype.aether.artifact.Artifact;
+import org.sonatype.aether.resolution.ArtifactResult;
+import org.sonatype.aether.util.artifact.DefaultArtifact;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -75,9 +71,12 @@ public class InstallMojo extends AbstractExecMojo2 {
             FindAvailableVersions.main(null);
             initialize();
 
-            Artifact artifact = resolveArtifact(artifactName);
+            Artifact artifact = new DefaultArtifact(artifactName);
+            ArtifactResults2 artifactResults = resolveArtifact(artifact);
 
-            List<ArtifactResult> dependencies = newArrayList(getDependencies(artifact));
+            artifact = artifactResults.artifact;
+
+            List<ArtifactResult> dependencies = artifactResults.getDependencies();
 
             if(className != null){
                 new ExecObject2(getLog(),
@@ -134,7 +133,7 @@ public class InstallMojo extends AbstractExecMojo2 {
     private static File writeClasspath(Artifact artifact, List<ArtifactResult> dependencies, File installToDir) throws IOException {
         ArrayList<File> classPathFiles = newArrayList(transform(dependencies, new Function<ArtifactResult, File>() {
             @Override
-            public File apply(@Nullable ArtifactResult artifactResult) {
+            public File apply(ArtifactResult artifactResult) {
                 return artifactResult.getArtifact().getFile();
             }
         }));

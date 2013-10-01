@@ -11,15 +11,7 @@ package com.chaschev.install;
  *    Sonatype, Inc. - initial API and implementation
  *******************************************************************************/
 
-import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.codehaus.plexus.DefaultPlexusContainer;
-import org.codehaus.plexus.PlexusContainer;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.connector.wagon.WagonProvider;
-import org.eclipse.aether.connector.wagon.WagonRepositoryConnectorFactory;
-import org.eclipse.aether.impl.DefaultServiceLocator;
-import org.eclipse.aether.internal.connector.wagon.PlexusWagonProvider;
-import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
+import org.sonatype.aether.RepositorySystem;
 
 /**
  * A factory for repository system instances that employs Aether's built-in service locator infrastructure to wire up
@@ -29,29 +21,32 @@ public class ManualRepositorySystemFactory {
 
     public static RepositorySystem newRepositorySystem() {
         /*
-         * Aether's components implement org.eclipse.aether.spi.locator.Service to ease manual wiring and using the
+         * Aether's components implement org.sonatype.aether.spi.locator.Service to ease manual wiring and using the
          * prepopulated DefaultServiceLocator, we only need to register the repository connector and transporter
          * factories.
          */
-        DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
+//        DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
+//
+//        locator.addService(RepositoryConnectorFactory.class, WagonRepositoryConnectorFactory.class);
+//        locator.addService(WagonProvider.class, PlexusWagonProvider.class);
+//        locator.addService(PlexusContainer.class, DefaultPlexusContainer.class);
+////        locator.addService(TransporterFactory.class, FileTransporterFactory.class);
+////        locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
+////        locator.addService(TransporterProvider.class, DefaultTransporterProvider.class);
+////        locator.addService(RepositoryLayoutProvider.class, DefaultRepositoryLayoutProvider.class);
+////        locator.addService(RepositoryLayoutFactory.class, Maven2RepositoryLayoutFactory.class);
+//
+//        locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
+//            @Override
+//            public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
+//                exception.printStackTrace();
+//            }
+//        });
+//
+//        return locator.getService(RepositorySystem.class);
 
-        locator.addService(RepositoryConnectorFactory.class, WagonRepositoryConnectorFactory.class);
-        locator.addService(WagonProvider.class, PlexusWagonProvider.class);
-        locator.addService(PlexusContainer.class, DefaultPlexusContainer.class);
-//        locator.addService(TransporterFactory.class, FileTransporterFactory.class);
-//        locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
-//        locator.addService(TransporterProvider.class, DefaultTransporterProvider.class);
-//        locator.addService(RepositoryLayoutProvider.class, DefaultRepositoryLayoutProvider.class);
-//        locator.addService(RepositoryLayoutFactory.class, Maven2RepositoryLayoutFactory.class);
 
-        locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
-            @Override
-            public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                exception.printStackTrace();
-            }
-        });
-
-        return locator.getService(RepositorySystem.class);
+        return null;
     }
 
 }

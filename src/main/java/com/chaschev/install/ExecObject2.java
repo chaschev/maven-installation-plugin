@@ -2,7 +2,8 @@ package com.chaschev.install;
 
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.resolution.ArtifactResult;
+import org.sonatype.aether.artifact.Artifact;
+import org.sonatype.aether.resolution.ArtifactResult;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -29,9 +30,9 @@ public class ExecObject2 {
     @Parameter(defaultValue = "runtime")
     protected String classpathScope;
 
-    private org.eclipse.aether.artifact.Artifact artifactToExec;
+    private Artifact artifactToExec;
 
-    List<ArtifactResult> artifactResults;
+    List<ArtifactResult> dependencies;
 
 
     /**
@@ -116,10 +117,10 @@ public class ExecObject2 {
     @Parameter(defaultValue = "false")
     private boolean stopUnresponsiveDaemonThreads = false;
 
-    public ExecObject2(Log log, org.eclipse.aether.artifact.Artifact artifactToExec, List<ArtifactResult> artifactResults, String mainClass, String[] arguments, Property[] systemProperties) {
+    public ExecObject2(Log log, Artifact artifactToExec, List<ArtifactResult> dependencies, String mainClass, String[] arguments, Property[] systemProperties) {
         this.log = log;
         this.artifactToExec = artifactToExec;
-        this.artifactResults = artifactResults;
+        this.dependencies = dependencies;
         this.mainClass = mainClass;
         this.arguments = arguments;
         this.systemProperties = systemProperties;
@@ -178,10 +179,8 @@ public class ExecObject2 {
         try {
             log.debug("Project Dependencies will be included.");
 
-            List<ArtifactResult> artifacts = artifactResults;
-
-            for (ArtifactResult it : artifacts) {
-                org.eclipse.aether.artifact.Artifact artifact = it.getArtifact();
+            for (ArtifactResult it : dependencies) {
+                Artifact artifact = it.getArtifact();
                 log.debug("adding artifact to classpath : " + artifact.getArtifactId() + " from repo " + it.getRepository().getId());
                 path.add(artifact.getFile().toURI().toURL());
             }
