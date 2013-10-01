@@ -33,6 +33,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.sonatype.aether.artifact.Artifact;
 import org.sonatype.aether.resolution.ArtifactResult;
 import org.sonatype.aether.util.artifact.DefaultArtifact;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,14 +48,13 @@ import static org.apache.commons.lang3.SystemUtils.IS_OS_UNIX;
 
 @Mojo(name = "install", requiresProject = false, threadSafe = true)
 public class InstallMojo extends AbstractExecMojo2 {
-
-    public static final Function<String,File> PATH_TO_FILE = new Function<String, File>() {
+    public static final Function<String, File> PATH_TO_FILE = new Function<String, File>() {
         public File apply(String s) {
             return new File(s);
         }
     };
 
-    public static final class MatchingPath implements Comparable<MatchingPath>{
+    public static final class MatchingPath implements Comparable<MatchingPath> {
 
         int type;
 
@@ -86,7 +86,7 @@ public class InstallMojo extends AbstractExecMojo2 {
 
             List<ArtifactResult> dependencies = artifactResults.getDependencies();
 
-            if(className != null){
+            if (className != null) {
                 new ExecObject2(getLog(),
                     artifact, dependencies, className,
                     parseArgs(),
@@ -98,8 +98,8 @@ public class InstallMojo extends AbstractExecMojo2 {
 
             List<Object[]> entries = (List<Object[]>) OpenBean2.getStaticFieldValue(installation, "shortcuts");
 
-            if(installTo == null){
-               installTo = findPath();
+            if (installTo == null) {
+                installTo = findPath();
             }
 
             File installToDir = new File(installTo);
@@ -108,18 +108,19 @@ public class InstallMojo extends AbstractExecMojo2 {
 
             for (Object[] entry : entries) {
                 String shortCut = (String) entry[0];
-                String className = ((Class)entry[1]).getName();
+                String className = ((Class) entry[1]).getName();
 
                 File file;
-                if(SystemUtils.IS_OS_WINDOWS){
+                if (SystemUtils.IS_OS_WINDOWS) {
+                    file = new File(installToDir, shortCut + ".bat");
                     FileUtils.writeStringToFile(
-                        file = new File(installToDir, shortCut + ".bat"),
-                        "@" + createLaunchString(className, classPathFile) + " %*");
-                }else{
+                        file,
+                        createLaunchScript(className, classPathFile));
+                } else {
                     file = new File(installToDir, shortCut);
                     FileUtils.writeStringToFile(
                         file,
-                        createLaunchString(className, classPathFile) + " $*");
+                        createLaunchScript(className, classPathFile));
                     try {
                         file.setExecutable(true, false);
                     } catch (Exception e) {
@@ -130,26 +131,60 @@ public class InstallMojo extends AbstractExecMojo2 {
                 getLog().info("created a shortcut: " + file.getAbsolutePath() + " -> " + className);
             }
         } catch (Exception e) {
-            if(e instanceof RuntimeException){
-                throw (RuntimeException)e;
-            }else{
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
                 getLog().error(e.toString(), e);
                 throw new MojoExecutionException(e.toString());
             }
         }
     }
 
-    private static String createLaunchString(String className, File classPathFile) {
+    private String createLaunchScript(String className, File classPathFile) {
         String jarPath = getJarByClass(Runner.class).getAbsolutePath();
 
-        if(IS_OS_UNIX){
+        boolean unix = IS_OS_UNIX;
+
+        if (unix) {
             String installerUserHome = getInstallerHomeDir(jarPath);
 
             jarPath = jarPath.replace(installerUserHome, "$HOME");
         }
 
-        return MessageFormat.format("{0} -cp \"{1}\" {2} {3} {4} ",
+        String appLaunchingString = MessageFormat.format("{0} -cp \"{1}\" {2} {3} {4}",
             javaExePath(), jarPath, Runner.class.getName(), classPathFile.getAbsolutePath(), className);
+
+        String script;
+
+        PluginDescriptor desc = (PluginDescriptor)getPluginContext().get("pluginDescriptor");
+
+        if (unix) {
+            appLaunchingString = appLaunchingString + " $*";
+
+            script = "todo";
+        } else {
+            appLaunchingString = "@" + appLaunchingString + " %*";
+
+            script =
+                MessageFormat.format("" +
+                    "@{0} -cp \"{1}\" {2} SMOKE_TEST_HUH\n" +
+                    "@IF ERRORLEVEL 1 GOTO nok\n" +
+                    "{3}\n" +
+                    "@goto leave\n\n" +
+                    "" +
+                    ":nok\n" +
+                    "mvn -U {4}:{5}:{6}:fetch\n" +
+                    "{3}\n" +
+                    "@goto leave\n\n" +
+                    "" +
+                    ":leave\n",
+                    javaExePath(), jarPath, Runner.class.getName(),
+                    appLaunchingString,
+                    desc.getGroupId(), desc.getArtifactId(), desc.getVersion());
+
+        }
+
+        return script;
     }
 
     private static String getInstallerHomeDir(String jarPath) {
@@ -178,9 +213,9 @@ public class InstallMojo extends AbstractExecMojo2 {
         FileUtils.writeLines(file, transform(classPathFiles, new Function<File, String>() {
             @Override
             public String apply(File file) {
-                if(IS_OS_UNIX){
+                if (IS_OS_UNIX) {
                     return file.getAbsolutePath().replace(installerUserHome, "$HOME");
-                }else{
+                } else {
                     return file.getAbsolutePath();
                 }
             }
@@ -210,17 +245,16 @@ public class InstallMojo extends AbstractExecMojo2 {
 
             boolean writable = isWritable(entryFile);
 
-            getLog().debug("testing " + entryFile.getAbsolutePath() + ": " + (writable ? "writable": "not writable"));
+            getLog().debug("testing " + entryFile.getAbsolutePath() + ": " + (writable ? "writable" : "not writable"));
 
-            if(absPath.startsWith(javaHomeAbsPath)){
+            if (absPath.startsWith(javaHomeAbsPath)) {
                 addMatching(matchingPaths, absPath, writable, 1);
-            } else
-            if(absPath.startsWith(mavenHomeAbsPath)){
+            } else if (absPath.startsWith(mavenHomeAbsPath)) {
                 addMatching(matchingPaths, absPath, writable, 2);
             }
         }
 
-        if(IS_OS_UNIX && matchingPaths.isEmpty()){
+        if (IS_OS_UNIX && matchingPaths.isEmpty()) {
             getLog().warn("didn't find maven/jdk writable roots available on path, trying common unix paths: " + knownBinFolders);
 
             final LinkedHashSet<File> pathEntriesSet = Sets.newLinkedHashSet(
@@ -228,7 +262,7 @@ public class InstallMojo extends AbstractExecMojo2 {
             );
 
             for (File knownBinFolder : knownBinFolders) {
-                if(pathEntriesSet.contains(knownBinFolder)){
+                if (pathEntriesSet.contains(knownBinFolder)) {
                     addMatching(matchingPaths, knownBinFolder.getAbsolutePath(), isWritable(knownBinFolder), 3);
                 }
             }
@@ -236,22 +270,22 @@ public class InstallMojo extends AbstractExecMojo2 {
 
         Collections.sort(matchingPaths);
 
-        if(matchingPaths.isEmpty()){
+        if (matchingPaths.isEmpty()) {
             throw new MojoFailureException("Could not find a bin folder to write to. Tried: \n" + Joiner.on("\n")
                 .join(mavenHomeAbsPath, javaHomeAbsPath) + "\n" +
                 (IS_OS_UNIX ? knownBinFolders + "\n" : "") +
-                    " but they don't appear on the path or are not writable. You may try running as administrator or specifying -DinstallTo=your-bin-dir-path parameter");
+                " but they don't appear on the path or are not writable. You may try running as administrator or specifying -DinstallTo=your-bin-dir-path parameter");
         }
 
         return matchingPaths.get(0).path;
     }
 
     private void addMatching(List<MatchingPath> matchingPaths, String matchingPath, boolean writable, int type) {
-        if(writable){
+        if (writable) {
             getLog().info(matchingPath + " matches");
 
             matchingPaths.add(new MatchingPath(type, matchingPath));
-        }else{
+        } else {
             getLog().warn(matchingPath + " matches, but is not writable");
 
         }
@@ -268,7 +302,7 @@ public class InstallMojo extends AbstractExecMojo2 {
     private static boolean isWritable(File dir) {
         try {
             File tempFile = File.createTempFile("testWrite", "txt", dir);
-            if(tempFile.exists()) {
+            if (tempFile.exists()) {
                 tempFile.delete();
                 return true;
             }

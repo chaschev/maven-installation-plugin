@@ -15,6 +15,10 @@ import java.util.List;
 public class Runner {
     public static void main(String[] args) throws IOException {
         if(args.length < 2){
+//            System.out.println(Arrays.asList(args));
+            if(args.length == 1 && "SMOKE_TEST_HUH".equals(args[0])){
+                return;
+            }
             System.out.println("Runner <classpathFile> <class> [arguments]");
             System.exit(-1);
         }
