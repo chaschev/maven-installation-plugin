@@ -68,7 +68,7 @@
         </profile>
     </profiles>
 
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
     <name>Install Plugin Mojo</name>
     <url>http://maven.apache.org</url>
     <dependencies>
