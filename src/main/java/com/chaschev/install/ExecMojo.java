@@ -28,14 +28,16 @@ import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.PluginManager;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -99,8 +101,6 @@ public class ExecMojo extends AbstractMojo {
     @Parameter( defaultValue = "${localRepository}", readonly = true )
     private org.apache.maven.artifact.repository.ArtifactRepository localRepository;
 
-    @Component
-    private PluginManager pluginManager;
 
     //Plan:
 
@@ -116,15 +116,11 @@ public class ExecMojo extends AbstractMojo {
 
             String[] strings = artifactString.split(":");
 
-//            System.out.println(Arrays.asList(strings));
-
             boolean hasClassifier = strings.length == 5;
 
             if(strings.length != 4 && strings.length != 5){
                 throw new MojoExecutionException("error: expected format is groupId:artifactId:version:[classifier:]className");
             }
-
-//            System.out.println(11);
 
             String groupId = strings[0];
             String artifactId = strings[1];
@@ -177,8 +173,6 @@ public class ExecMojo extends AbstractMojo {
             Artifact dummyOriginatingArtifact =
                 artifactFactory.createBuildArtifact( "org.apache.maven.plugins", "maven-downloader-plugin", "1.0", "jar" );
 
-            System.out.println(44);
-
             getLog().info( "Resolving " + toDownload + " with transitive dependencies" );
 
             return artifactResolver.resolveTransitively(
@@ -208,7 +202,6 @@ public class ExecMojo extends AbstractMojo {
         sb.append(", repositoryLayouts=").append(repositoryLayouts);
         sb.append(", source=").append(source);
         sb.append(", localRepository=").append(localRepository);
-        sb.append(", pluginManager=").append(pluginManager);
         sb.append('}');
         return sb.toString();
     }

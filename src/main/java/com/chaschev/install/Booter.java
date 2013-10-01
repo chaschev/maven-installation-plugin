@@ -12,6 +12,9 @@ package com.chaschev.install;
  *    Sonatype, Inc. - initial API and implementation
  *******************************************************************************/
 
+import com.chaschev.install.ConsoleRepositoryListener;
+import com.chaschev.install.ConsoleTransferListener;
+import com.chaschev.install.guice.GuiceRepositorySystemFactory;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
@@ -26,9 +29,14 @@ public class Booter
 
     public static RepositorySystem newRepositorySystem()
     {
-        return ManualRepositorySystemFactory.newRepositorySystem();
-        // return org.eclipse.aether.examples.guice.GuiceRepositorySystemFactory.newRepositorySystem();
-        // return org.eclipse.aether.examples.plexus.PlexusRepositorySystemFactory.newRepositorySystem();
+//        return ManualRepositorySystemFactory.newRepositorySystem();
+        return GuiceRepositorySystemFactory.newRepositorySystem();
+//        return PlexusRepositorySystemFactory.newRepositorySystem();
+//        return new DefaultRepositorySystem();
+    }
+
+    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system){
+        return newRepositorySystemSession(system, new LocalRepository("target/repo4"));
     }
 
     public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, LocalRepository localRepo)
@@ -49,6 +57,11 @@ public class Booter
     public static RemoteRepository newCentralRepository()
     {
         return new RemoteRepository.Builder( "central", "default", "http://repo1.maven.org/maven2/" ).build();
+    }
+
+    public static RemoteRepository newSonatypeRepository()
+    {
+        return new RemoteRepository.Builder( "sonatype-snapshots", "default", "https://oss.sonatype.org/content/repositories/snapshots/" ).build();
     }
 
 }

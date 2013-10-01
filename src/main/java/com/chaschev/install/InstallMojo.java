@@ -17,6 +17,9 @@ package com.chaschev.install;
  */
 
 import com.chaschev.chutils.util.OpenBean2;
+import com.chaschev.install.ExecObject2;
+import com.chaschev.install.FindAvailableVersions;
+import com.chaschev.install.Runner;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
@@ -69,11 +72,12 @@ public class InstallMojo extends AbstractExecMojo2 {
 
     public void execute() throws MojoExecutionException, MojoFailureException {
         try {
+            FindAvailableVersions.main(null);
             initialize();
 
             Artifact artifact = resolveArtifact(artifactName);
 
-            List<ArtifactResult> dependencies = Lists.newArrayList(getDependencies(artifact));
+            List<ArtifactResult> dependencies = newArrayList(getDependencies(artifact));
 
             if(className != null){
                 new ExecObject2(getLog(),

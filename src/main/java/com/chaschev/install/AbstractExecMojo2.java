@@ -59,8 +59,8 @@ public abstract class AbstractExecMojo2 extends AbstractMojo {
      * ie. central::default::http://repo1.maven.apache.org/maven2,myrepo::::http://repo.acme.com,http://repo.acme2.com
      */
     @Parameter(property = "remoteRepositories", defaultValue =
-        "http://repo1.maven.apache.org/maven2," +
-            "https://oss.sonatype.org/content/repositories/snapshots")
+        "central::default::http://repo1.maven.org/maven2/," +
+            "sonatype-snapshots::default::https://oss.sonatype.org/content/repositories/snapshots")
     protected String remoteRepositories;
 
     /**
