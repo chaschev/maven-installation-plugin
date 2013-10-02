@@ -7,3 +7,16 @@
 ##### Full
 
 Same, but also depends on mvn install.
+
+##### Todo
+
+Some ideas.
+
+- Post-installation steps
+- java/javaw launchers
+- specifying JAVA_OPTS for executables
+- Building executables from the app (Bootstrap API)
+- Setting environment variables (Bootstrap API)
+- Downloading resources from the web (Bootstrap API)
+- Test with: cap4j/ivy/ant installations.
+- Steps to install JRuby/Jython/Groovy on the command line (Bootstrap API)

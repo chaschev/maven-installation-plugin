@@ -117,14 +117,14 @@ Install your artifact to the local repository
 Next try running your shortcuts. If there are no exceptions, the installation was ok.
 
 Running remote artifact
-=======================
+-----------------------
 
 Use `installation:exec` to download and run your artifact. Example:
 
     $ mvn installation:exec -Dartifact=com.chaschev:chutils -Dclass=com.chaschev.chutils.Main -Dargs="Andrey day"
 
 Contributing
-============
+------------
 
 Contributions are welcome! Tips below might be useful for testing and extending the Installation plugin:
 
@@ -169,6 +169,6 @@ Adding plugin repositories in `settings.xml`, i.e.:
 ```
 
 Credits
-=======
+-------
 
 Thanks go to [yegor256](https://github.com/yegor256) for his contributions to Maven Aether.
