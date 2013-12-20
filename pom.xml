@@ -35,24 +35,72 @@
         </license>
     </licenses>
 
-    <properties>
-        <manufacturer>org.sonatype</manufacturer>
-        <mavenVersion>3.0.5</mavenVersion>
-        <aetherVersion>1.13.1</aetherVersion>
-        <sisu.version>2.3.4</sisu.version>
-    </properties>
 
     <profiles>
         <profile>
-            <id>Eclipse Aether</id>
+            <id>Sonatype</id>
+
             <properties>
-                <manufacturer>org.eclipse</manufacturer>
-                <aetherVersion>0.9.0.M3</aetherVersion>
-                <mavenVersion>3.1.0</mavenVersion>
+                <manufacturer>org.sonatype</manufacturer>
+                <mavenVersion>3.0.5</mavenVersion>
+                <aetherVersion>1.13.1</aetherVersion>
+                <sisu.version>2.3.4</sisu.version>
             </properties>
             <dependencies>
-
                 <dependency>
+                    <groupId>${manufacturer}.aether</groupId>
+                    <artifactId>aether-connector-file</artifactId>
+                    <version>${aetherVersion}</version>
+                </dependency>
+                <dependency>
+                    <groupId>${manufacturer}.aether</groupId>
+                    <artifactId>aether-connector-asynchttpclient</artifactId>
+                    <version>${aetherVersion}</version>
+                </dependency>
+                <dependency>
+                    <groupId>${manufacturer}.aether</groupId>
+                    <artifactId>aether-connector-wagon</artifactId>
+                    <version>${aetherVersion}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.sonatype.sisu</groupId>
+                    <artifactId>sisu-inject-plexus</artifactId>
+                    <version>${sisu.version}</version>
+                    <scope>provided</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.sonatype.sisu</groupId>
+                            <artifactId>sisu-inject-bean</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <dependency>
+                    <groupId>org.kuali.maven.wagons</groupId>
+                    <artifactId>maven-s3-wagon</artifactId>
+                    <version>1.1.20</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-log4j12</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+
+            </dependencies>
+        </profile>
+        <profile>
+            <id>Eclipse Aether</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <properties>
+                <manufacturer>org.eclipse</manufacturer>
+                <aetherVersion>0.9.0.M2</aetherVersion>
+                <mavenVersion>3.1.1</mavenVersion>
+            </properties>
+            <dependencies>
+               <!-- <dependency>
                     <groupId>${manufacturer}.aether</groupId>
                     <artifactId>aether-connector-basic</artifactId>
                     <version>${aetherVersion}</version>
@@ -66,7 +114,7 @@
                     <groupId>${manufacturer}.aether</groupId>
                     <artifactId>aether-transport-http</artifactId>
                     <version>${aetherVersion}</version>
-                </dependency>
+                </dependency>-->
             </dependencies>
         </profile>
     </profiles>
@@ -124,42 +172,11 @@
             <version>${aetherVersion}</version>
         </dependency>
         <dependency>
-            <groupId>${manufacturer}.aether</groupId>
-            <artifactId>aether-connector-file</artifactId>
-            <version>${aetherVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>${manufacturer}.aether</groupId>
-            <artifactId>aether-connector-asynchttpclient</artifactId>
-            <version>${aetherVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>${manufacturer}.aether</groupId>
-            <artifactId>aether-connector-wagon</artifactId>
-            <version>${aetherVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>0.12.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>15.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.kuali.maven.wagons</groupId>
-            <artifactId>maven-s3-wagon</artifactId>
-            <version>1.1.20</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
@@ -217,24 +234,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.0.12</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.jcabi</groupId>
-            <artifactId>jcabi-log</artifactId>
-            <version>0.7.22</version>
-        </dependency>
-        <dependency>
-            <groupId>org.sonatype.sisu</groupId>
-            <artifactId>sisu-inject-plexus</artifactId>
-            <version>${sisu.version}</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.sonatype.sisu</groupId>
-                    <artifactId>sisu-inject-bean</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.codehaus.plexus</groupId>

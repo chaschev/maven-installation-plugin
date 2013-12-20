@@ -17,6 +17,7 @@ public class Runner {
         if(args.length < 2){
 //            System.out.println(Arrays.asList(args));
             if(args.length == 1 && "SMOKE_TEST_HUH".equals(args[0])){
+//                System.out.println("smoke test ok");
                 return;
             }
             System.out.println("Runner <classpathFile> <class> [arguments]");
@@ -40,7 +41,7 @@ public class Runner {
 
         args = Arrays.copyOfRange(args, 2, args.length);
 
-        new ExecObject2.ClassRunner(
+        new ExecObject.ClassRunner(
             className, classpathEntries,
             "",
             args,

@@ -1,23 +1,31 @@
 package com.chaschev.install;
 
 import com.chaschev.chutils.util.Exceptions;
-import com.chaschev.install.jcabi.Aether;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.SystemUtils;
+import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
+import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
-import org.sonatype.aether.artifact.Artifact;
-import org.sonatype.aether.repository.RemoteRepository;
-import org.sonatype.aether.repository.RepositoryPolicy;
-import org.sonatype.aether.resolution.*;
-import org.sonatype.aether.util.artifact.DefaultArtifact;
-import org.sonatype.aether.util.artifact.JavaScopes;
-import org.sonatype.aether.version.Version;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
+import org.eclipse.aether.resolution.*;
+import org.eclipse.aether.util.artifact.JavaScopes;
+import org.eclipse.aether.util.filter.DependencyFilterUtils;
+import org.eclipse.aether.version.Version;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -28,7 +36,7 @@ import java.util.regex.Pattern;
 /**
  * @author Andrey Chaschev chaschev@gmail.com
  */
-public abstract class AbstractExecMojo2 extends AbstractMojo {
+public abstract class AbstractExecMojo extends AbstractMojo {
     private static final Pattern ALT_REPO_SYNTAX_PATTERN = Pattern.compile("(.+)::(.*)::(.+)");
 
     /**
@@ -56,6 +64,7 @@ public abstract class AbstractExecMojo2 extends AbstractMojo {
     @Parameter(property = "remoteRepositories", defaultValue =
         "central::default::http://repo1.maven.org/maven2/," +
             "sonatype-snapshots::default::https://oss.sonatype.org/content/repositories/snapshots")
+
     protected String remoteRepositories;
 
     /**
@@ -73,66 +82,80 @@ public abstract class AbstractExecMojo2 extends AbstractMojo {
     protected String localRepo;
 
     protected List<RemoteRepository> repositories;
-    private Aether aether;
+
+    @Component
+    private ArtifactRepositoryFactory artifactRepositoryFactory;
+
+    /**
+     * Map that contains the layouts.
+     */
+    @Component(role = ArtifactRepositoryLayout.class)
+    private java.util.Map<String, ArtifactRepositoryLayout> repositoryLayouts;
+
+    @Component
+    private RepositorySystem system;
+
+//    @Component
+    private RepositorySystemSession session;
 
     protected void initialize() throws VersionRangeResolutionException, MojoFailureException {
-        File repositoryFile = localRepo == null ? (new File(SystemUtils.getUserHome(),
-              ".m2/repository")) : new File(localRepo);
+        File repositoryFile = localRepo == null ?
+            new File(SystemUtils.getUserHome(), ".m2/repository") :
+            new File(localRepo);
 
         Preconditions.checkArgument(repositoryFile.exists(), "could not find local repo at: %s", repositoryFile.getAbsolutePath());
 
         repositories = new RepositoryParser().parse(remoteRepositories);
 
-        aether = new Aether(Lists.newArrayList(
-            repositories
-        ), repositoryFile);
+        session = Booter.newSession(system, repositoryFile);
 
         if ("LATEST".equals(artifactVersion)) {
             Artifact artifact = new DefaultArtifact(artifactName + ":[0,)");
 
             VersionRangeRequest rangeRequest = new VersionRangeRequest();
 
-            rangeRequest.setArtifact( artifact );
+            rangeRequest.setArtifact(artifact);
             rangeRequest.setRepositories(repositories);
 
-
-            VersionRangeResult rangeResult = aether.getVersions(artifact);
+            VersionRangeResult rangeResult = system.resolveVersionRange(session, rangeRequest);
 
             List<Version> versions = Lists.reverse(rangeResult.getVersions());
 
 //            Version matchedVersion = rangeRequest.;
             Version matchedVersion = null;
 
-            if(!snapshots) {
-                for (int i = 0; i < versions.size(); i++) {
-                    Version version = versions.get(i);
+            if (!snapshots) {
+                for (Version version : versions) {
                     if (!version.toString().toUpperCase().contains("SNAPSHOT")) {
                         matchedVersion = version;
                         break;
                     }
                 }
-                if(matchedVersion == null){
+
+                if (matchedVersion == null) {
                     matchedVersion = rangeResult.getHighestVersion();
-                    if(matchedVersion != null){
+                    if (matchedVersion != null) {
                         getLog().warn("didn't find non-snapshot version for " + artifactName +
                             ", using snapshot version: " + matchedVersion);
                     }
                 }
-            }else{
+            } else {
                 matchedVersion = rangeResult.getHighestVersion();
             }
 
-            if(matchedVersion == null){
+            if (matchedVersion == null) {
                 throw new MojoFailureException("didn't find matching version for " + artifactName);
             }
 
             artifactVersion = matchedVersion.toString();
+
+            getLog().info("found the latest version for " + artifact +": " + artifactVersion);
         }
 
         artifactName += ":" + artifactVersion;
     }
 
-    protected ArtifactResults2 resolveArtifact(Artifact artifact) throws ArtifactResolutionException {
+    protected DependencyResult resolveArtifact(Artifact artifact) throws ArtifactResolutionException {
         try {
             getLog().info("resolving artifact " + artifact);
 
@@ -141,33 +164,24 @@ public abstract class AbstractExecMojo2 extends AbstractMojo {
 
             artifactRequest.setRepositories(repositories);
 
-            DependencyResult dependencyResult = aether.resolve(artifact, JavaScopes.COMPILE);
 
-            List<ArtifactResult> deps = dependencyResult.getArtifactResults();
+            DependencyFilter classpathFlter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
 
-            if(!deps.isEmpty()) {
-                artifact = artifact.setFile(deps.get(0).getArtifact().getFile());
-            }
 
-            return new ArtifactResults2(artifact, deps, dependencyResult);
+            CollectRequest collectRequest = new CollectRequest();
+            collectRequest.setRoot(new Dependency(artifact, "compile"));
+            collectRequest.setRepositories(repositories);
+
+//            CollectResult collectResult = system.collectDependencies(session, collectRequest);
+
+
+            DependencyRequest dependencyRequest = new DependencyRequest( collectRequest, classpathFlter );
+
+            return    system.resolveDependencies( session, dependencyRequest );
         } catch (DependencyResolutionException e) {
             throw Exceptions.runtime(e);
         }
     }
-
-//    protected List<ArtifactResult> getDependencies(Artifact artifact) throws DependencyResolutionException {
-//        DependencyFilter dependencyFilter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
-//
-//        CollectRequest collectRequest = new CollectRequest();
-//        collectRequest.setRoot( new Dependency( artifact, JavaScopes.COMPILE ) );
-//        collectRequest.setRepositories(repositories);
-//
-//        DependencyRequest dependencyRequest = new DependencyRequest( collectRequest, dependencyFilter );
-//
-//
-//
-//        return system.resolveDependencies(session, dependencyRequest).getArtifactResults();
-//    }
 
     protected String[] parseArgs() throws MojoExecutionException {
         if (commandlineArgs == null) return null;
@@ -198,7 +212,7 @@ public abstract class AbstractExecMojo2 extends AbstractMojo {
             }
         }
 
-        public RemoteRepository parseRepository(String repo)  throws MojoFailureException {
+        public RemoteRepository parseRepository(String repo) throws MojoFailureException {
             // if it's a simple url
             String id = null;
             String layout = "default";
@@ -224,14 +238,16 @@ public abstract class AbstractExecMojo2 extends AbstractMojo {
                 url = repo;
             }
 
-            RemoteRepository remote = new RemoteRepository(id, layout, url);
+//            RemoteRepository remote = new RemoteRepository(id, layout, url);
+            RemoteRepository.Builder builder = new RemoteRepository.Builder(id, layout, url);
 
-            if(url.contains("snapshot")){
-                remote.setPolicy(true, new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_ALWAYS,
+            if (url.contains("snapshot")) {
+                builder.setPolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_ALWAYS,
                     RepositoryPolicy.CHECKSUM_POLICY_WARN));
             }
 
-            return remote;
+
+            return builder.build();
         }
     }
 }

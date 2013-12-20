@@ -71,7 +71,7 @@ Requirements
 ------------
 
 - JRE 1.6+ to install, JDK 1.6+ to build
-- Maven 3.0.X (3.1.0 is not supported)
+- Maven 3.1.x (3.0.x was not tested)
  
 How to Use
 ----------

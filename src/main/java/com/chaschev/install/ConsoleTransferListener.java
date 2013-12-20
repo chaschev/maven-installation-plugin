@@ -10,10 +10,10 @@
  *******************************************************************************/
 package com.chaschev.install;
 
-import org.sonatype.aether.transfer.AbstractTransferListener;
-import org.sonatype.aether.transfer.MetadataNotFoundException;
-import org.sonatype.aether.transfer.TransferEvent;
-import org.sonatype.aether.transfer.TransferResource;
+import org.eclipse.aether.transfer.AbstractTransferListener;
+import org.eclipse.aether.transfer.MetadataNotFoundException;
+import org.eclipse.aether.transfer.TransferEvent;
+import org.eclipse.aether.transfer.TransferResource;
 
 import java.io.PrintStream;
 import java.text.DecimalFormat;

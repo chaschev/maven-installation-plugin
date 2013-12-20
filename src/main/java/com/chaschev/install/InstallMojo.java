@@ -30,10 +30,11 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.sonatype.aether.artifact.Artifact;
-import org.sonatype.aether.resolution.ArtifactResult;
-import org.sonatype.aether.util.artifact.DefaultArtifact;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.eclipse.aether.resolution.DependencyResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,7 +48,7 @@ import static com.google.common.collect.Lists.transform;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_UNIX;
 
 @Mojo(name = "install", requiresProject = false, threadSafe = true)
-public class InstallMojo extends AbstractExecMojo2 {
+public class InstallMojo extends AbstractExecMojo {
     public static final Function<String, File> PATH_TO_FILE = new Function<String, File>() {
         public File apply(String s) {
             return new File(s);
@@ -55,19 +56,18 @@ public class InstallMojo extends AbstractExecMojo2 {
     };
 
     public static final class MatchingPath implements Comparable<MatchingPath> {
-
-        int type;
+        int priority;
 
         String path;
 
-        public MatchingPath(int type, String path) {
-            this.type = type;
+        public MatchingPath(int priority, String path) {
+            this.priority = priority;
             this.path = path;
         }
 
         @Override
         public int compareTo(MatchingPath o) {
-            return type - o.type;
+            return priority - o.priority;
         }
     }
 
@@ -80,14 +80,14 @@ public class InstallMojo extends AbstractExecMojo2 {
             initialize();
 
             Artifact artifact = new DefaultArtifact(artifactName);
-            ArtifactResults2 artifactResults = resolveArtifact(artifact);
+            DependencyResult dependencyResult = resolveArtifact(artifact);
 
-            artifact = artifactResults.artifact;
+            artifact = dependencyResult.getRoot().getArtifact();
 
-            List<ArtifactResult> dependencies = artifactResults.getDependencies();
+            List<ArtifactResult> dependencies = dependencyResult.getArtifactResults();
 
             if (className != null) {
-                new ExecObject2(getLog(),
+                new ExecObject(getLog(),
                     artifact, dependencies, className,
                     parseArgs(),
                     systemProperties

@@ -20,3 +20,4 @@ Some ideas.
 - Downloading resources from the web (Bootstrap API)
 - Test with: cap4j/ivy/ant installations.
 - Steps to install JRuby/Jython/Groovy on the command line (Bootstrap API)
+- Full installation is possible with maven, because one may deploy versioned zip archives: https://github.com/projectodd/nodyn
