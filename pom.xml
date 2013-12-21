@@ -35,6 +35,11 @@
         </license>
     </licenses>
 
+    <properties>
+        <manufacturer>org.eclipse</manufacturer>
+        <aetherVersion>0.9.0.M2</aetherVersion>
+        <mavenVersion>3.1.1</mavenVersion>
+    </properties>
 
     <profiles>
         <profile>
@@ -89,16 +94,12 @@
             </dependencies>
         </profile>
         <profile>
-            <id>Eclipse Aether</id>
+            <id>eclipse-aether</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
 
-            <properties>
-                <manufacturer>org.eclipse</manufacturer>
-                <aetherVersion>0.9.0.M2</aetherVersion>
-                <mavenVersion>3.1.1</mavenVersion>
-            </properties>
+
             <dependencies>
                <!-- <dependency>
                     <groupId>${manufacturer}.aether</groupId>
