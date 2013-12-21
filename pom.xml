@@ -16,7 +16,7 @@
     <scm>
         <connection>scm:git:git@github.com:chaschev/install-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:chaschev/install-plugin.git</developerConnection>
-        <url>git@github.com:chaschev/chutils.git</url>
+        <url>git@github.com:chaschev/install-plugin.git</url>
     </scm>
 
     <developers>

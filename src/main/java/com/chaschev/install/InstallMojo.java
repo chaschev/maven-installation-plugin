@@ -108,7 +108,7 @@ public class InstallMojo extends AbstractExecMojo {
 
             for (Object[] entry : entries) {
                 String shortCut = (String) entry[0];
-                String className = ((Class) entry[1]).getName();
+                String className = entry[1] instanceof String? entry[1].toString() : ((Class) entry[1]).getName();
 
                 File file;
                 if (SystemUtils.IS_OS_WINDOWS) {

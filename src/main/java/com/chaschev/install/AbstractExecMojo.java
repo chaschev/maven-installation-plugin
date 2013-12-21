@@ -164,20 +164,15 @@ public abstract class AbstractExecMojo extends AbstractMojo {
 
             artifactRequest.setRepositories(repositories);
 
-
-            DependencyFilter classpathFlter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
-
+            DependencyFilter classpathFilter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
 
             CollectRequest collectRequest = new CollectRequest();
-            collectRequest.setRoot(new Dependency(artifact, "compile"));
+            collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
             collectRequest.setRepositories(repositories);
 
-//            CollectResult collectResult = system.collectDependencies(session, collectRequest);
+            DependencyRequest dependencyRequest = new DependencyRequest( collectRequest, classpathFilter );
 
-
-            DependencyRequest dependencyRequest = new DependencyRequest( collectRequest, classpathFlter );
-
-            return    system.resolveDependencies( session, dependencyRequest );
+            return system.resolveDependencies(session, dependencyRequest);
         } catch (DependencyResolutionException e) {
             throw Exceptions.runtime(e);
         }
