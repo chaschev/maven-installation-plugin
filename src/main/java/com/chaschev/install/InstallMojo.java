@@ -45,6 +45,8 @@ import java.util.*;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
+import static org.apache.commons.lang3.StringUtils.substringAfter;
+import static org.apache.commons.lang3.StringUtils.substringBefore;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_UNIX;
 
 @Mojo(name = "install", requiresProject = false, threadSafe = true)
@@ -187,6 +189,8 @@ public class InstallMojo extends AbstractExecMojo {
                 appLaunchingString,
                 desc.getGroupId(), desc.getArtifactId(), desc.getVersion());
         } else {
+            //add quotes for "Program Files" case
+            appLaunchingString = '"' + substringBefore(appLaunchingString, " ") + "\" " + substringAfter(appLaunchingString, " ");
             appLaunchingString = "@" + appLaunchingString + " %*";
 
             script =
@@ -211,7 +215,7 @@ public class InstallMojo extends AbstractExecMojo {
     }
 
     private static String getInstallerHomeDir(String jarPath) {
-        return new File(StringUtils.substringBefore(jarPath, "/com/chaschev")).getParentFile().getParentFile().getAbsolutePath();
+        return new File(substringBefore(jarPath, "/com/chaschev")).getParentFile().getParentFile().getAbsolutePath();
     }
 
     private static File javaExePath() {
